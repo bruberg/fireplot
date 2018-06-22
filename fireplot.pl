@@ -98,6 +98,9 @@ my @udp4_pairs = ();
 my @tcp6_pairs = ();
 my @udp6_pairs = ();
 
+# Define the upper left and lower right corners
+# of the final plot, to calculate where the plots
+# will appear.
 my $x1 = 88;
 my $y1 = 44;
 my $x2 = 1128;
@@ -108,6 +111,8 @@ my $yfactor = (($y2 - $y1) / (log (65535)/log(10)));
 my $xfactor = (($x2 - $x1) / 24);
 # print "X factor: $xfactor\n";
 
+# Create an imagemap hash, in which to store information
+# for mouse-over
 my %imagemap;
 
 # Here you have to create your own regular expression to match your firewall logs
