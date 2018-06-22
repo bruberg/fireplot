@@ -92,7 +92,7 @@ my $chart = Chart::Gnuplot->new (
     imagesize => "1.6, 1.0",
     );
 
-# Empty array
+# Empty arrays
 my @tcp4_pairs = ();
 my @udp4_pairs = ();
 my @tcp6_pairs = ();
@@ -103,7 +103,6 @@ my $y1 = 44;
 my $x2 = 1128;
 my $y2 = 438;
 my $yfactor = (($y2 - $y1) / (log (65535)/log(10)));
-# log($n)/log(10)
 # print "Y factor: $yfactor\n";
 
 my $xfactor = (($x2 - $x1) / 24);
@@ -116,7 +115,14 @@ my %imagemap;
 # 1) The path(s) to your log file(s)
 # 2) The regular expression(s) to extract the following fields:
 #    - date
-#    - protocol 
+#    - protocol (udp or tcp)
+#    - source IP
+#    - source port
+#    - destination IP
+#    - destination port
+# The code will crudely identify whether the IP address
+# is an IPv4 or IPv6 address.
+
 open (INPUT, "grep -h corerouter /var/log/logstash/everything.log.1 /var/log/logstash/everything.log |") or die "I failed";
 while (my $line = <INPUT>) {
     next if $line =~ /ACK,FIN/;
@@ -126,6 +132,8 @@ while (my $line = <INPUT>) {
 	my $proto  = $2;
         my $source = $3;
         my $dest   = $4;
+	# The log format groups IP and port (ip:port)
+	# so we have to extract each
         my ($srcip, $srcport) = $source =~ /(.*):(\d+)$/;
         my ($dstip, $dstport) = $dest   =~ /(.*):(\d+)$/;
         my $version = "IPv4"; # assume the worst
@@ -147,6 +155,8 @@ while (my $line = <INPUT>) {
 	# imagemap here
         my $y = int ($y2 - ($yfactor * (log($dstport)/log(10))));
         my $xdate = $date;
+	# Convert the timestamp from the logs to a format
+	# that can be used in the image map
         $xdate =~ s/^\w+\s+\d+\s(\d+)\:(\d+)+\:\d+/$1+($2\/60)/e;
         my $x = int ($x1 + ($xfactor * $xdate));
 	$imagemap{$x}{$y}{$srcip} = "$proto/$dstport";
@@ -161,8 +171,6 @@ close INPUT;
 
 open (IMAGEMAP, ">", "${fireplot_basedir}/imagemap-${today}.map");
 foreach my $xcoord (keys %imagemap) {
-    # my $ycoord = $imagemap{$xcoord};
-    # # do something with $key and $value
     foreach my $ycoord (keys %{$imagemap{$xcoord}}) {
         # print "X: $xcoord  Y: $ycoord\n";
 
